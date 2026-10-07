@@ -42,6 +42,15 @@ npx supabase db reset
 npm run build
 ```
 
+## Deploy ke Vercel
+
+Import repository GitHub privat `NirCulus/chic-kampus` ke Vercel. Gunakan framework preset Vite, build command `npm run build`, dan output directory `dist`. Tambahkan environment variable Production berikut dari project Supabase Cloud:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Jangan gunakan URL localhost atau `service_role` key di frontend. `vercel.json` mengarahkan route aplikasi kembali ke `index.html` agar `/kiosk` dan `/owner/login` dapat dibuka langsung.
+
 ## Catatan prototype
 
 QRIS dan cetak struk adalah simulasi browser. Laporan keuangan menampilkan omzet; laba/rugi belum tersedia karena HPP dan biaya operasional belum dicatat.
