@@ -1,0 +1,11 @@
+<script setup>
+import { ref } from 'vue'
+const props = defineProps({ total: { type: Number, required: true }, submitting: Boolean })
+const emit = defineEmits(['close', 'confirm'])
+const method = ref('qris')
+const money = (value) => `Rp${value.toLocaleString('id-ID')}`
+</script>
+
+<template>
+  <div class="screen-only fixed inset-0 z-40 grid place-items-center bg-black/50 p-4"><section class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="checkout-title"><button class="float-right text-2xl text-stone-400" aria-label="Tutup" @click="emit('close')">×</button><p class="text-xs font-bold uppercase tracking-[0.16em] text-chic-orange">Pembayaran</p><h2 id="checkout-title" class="mt-1 text-2xl font-black">Selesaikan pesanan</h2><p class="mt-1 text-stone-500">Total pembayaran <b class="text-chic-ink">{{ money(props.total) }}</b>.</p><div class="mt-5 grid grid-cols-2 gap-3"><button class="rounded-2xl border-2 p-4 text-left" :class="method === 'qris' ? 'border-chic-orange bg-orange-50' : 'border-stone-200'" @click="method = 'qris'"><b>QRIS</b><span class="mt-1 block text-xs text-stone-500">Scan kode QR</span></button><button class="rounded-2xl border-2 p-4 text-left" :class="method === 'cash' ? 'border-chic-orange bg-orange-50' : 'border-stone-200'" @click="method = 'cash'"><b>Tunai</b><span class="mt-1 block text-xs text-stone-500">Bayar ke owner</span></button></div><div v-if="method === 'qris'" class="mx-auto mt-5 grid h-44 w-44 grid-cols-7 gap-1 rounded-xl border-8 border-chic-ink bg-white p-2" aria-label="Kode QR simulasi"><i v-for="cell in 49" :key="cell" class="rounded-[1px]" :class="cell % 3 === 0 || cell % 7 === 1 ? 'bg-chic-ink' : 'bg-white'"></i></div><p class="mt-4 text-center text-xs text-stone-500">{{ method === 'qris' ? 'Setelah pembayaran, struk akan tercetak otomatis.' : 'Pesanan diproses setelah owner menerima pembayaran tunai.' }}</p><button class="mt-5 w-full rounded-xl bg-chic-orange px-4 py-3 font-bold text-white disabled:bg-stone-300" :disabled="submitting" @click="emit('confirm', method)">{{ submitting ? 'Memproses…' : method === 'qris' ? 'Bayar pesanan' : 'Buat pesanan tunai' }}</button></section></div>
+</template>

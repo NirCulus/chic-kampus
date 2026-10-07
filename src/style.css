@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-chic-orange: #ef7426;
+  --color-chic-orange-dark: #cf5913;
+  --color-chic-cream: #fff8f1;
+  --color-chic-ink: #2b1b12;
+  --font-sans: "Inter", "Segoe UI", sans-serif;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  html { font-family: var(--font-sans); background: var(--color-chic-cream); color: var(--color-chic-ink); }
+
+  body { min-width: 320px; min-height: 100svh; margin: 0; }
+
+  button, input, select, textarea { font: inherit; }
+
+  button { cursor: pointer; }
+}
+
+@media print {
+  @page { size: 58mm auto; margin: 0; }
+  body * { visibility: hidden; }
+  #thermal-receipt, #thermal-receipt * { visibility: visible; }
+  #thermal-receipt { position: fixed; inset: 0 auto auto 0; width: 58mm; padding: 4mm; color: #000; background: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
+  .screen-only { display: none !important; }
+  .receipt-hidden { display: block !important; }
+}
+
+.receipt-hidden { display: none; }

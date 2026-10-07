@@ -1,0 +1,1 @@
+<template><div class="screen-only fixed inset-x-0 top-0 z-50 bg-red-600 px-4 py-3 text-center text-sm font-bold text-white" role="alert">Koneksi terputus. Silakan sambungkan internet sebelum memesan.</div></template>

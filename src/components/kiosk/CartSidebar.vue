@@ -1,0 +1,11 @@
+<script setup>
+import { getCarb, getSauce, getSize } from '../../constants/menu'
+
+defineProps({ items: { type: Array, default: () => [] }, total: { type: Number, default: 0 }, disabled: Boolean })
+const emit = defineEmits(['change-quantity', 'remove', 'checkout'])
+const money = (value) => `Rp${value.toLocaleString('id-ID')}`
+</script>
+
+<template>
+  <aside class="rounded-3xl bg-chic-ink p-5 text-white shadow-xl lg:sticky lg:top-6 lg:h-fit"><div class="flex items-center justify-between border-b border-white/15 pb-4"><div><p class="text-xs font-bold uppercase tracking-[0.16em] text-orange-200">Keranjang</p><h2 class="mt-1 text-xl font-black">Pesananmu</h2></div><span class="rounded-full bg-white/10 px-3 py-1 text-xs font-bold">{{ items.length }} menu</span></div><div v-if="!items.length" class="py-10 text-center text-sm text-stone-300">Belum ada menu di keranjang.</div><div v-else class="divide-y divide-white/10"><article v-for="item in items" :key="item.key" class="py-4"><div class="flex justify-between gap-3"><div><h3 class="font-bold">{{ getSize(item.size)?.label }}</h3><p class="mt-1 text-xs text-stone-300">{{ getSauce(item.sauceVariant)?.label }} · {{ getCarb(item.carbType)?.label }}</p></div><b class="text-sm">{{ money(item.subtotal) }}</b></div><div class="mt-3 flex items-center justify-between"><div class="flex items-center gap-2"><button class="h-7 w-7 rounded-full bg-white/10" @click="emit('change-quantity', item.key, item.qty - 1)">−</button><span class="w-5 text-center text-sm font-bold">{{ item.qty }}</span><button class="h-7 w-7 rounded-full bg-white/10" @click="emit('change-quantity', item.key, item.qty + 1)">+</button></div><button class="text-xs font-bold text-orange-200 underline" @click="emit('remove', item.key)">Hapus</button></div></article></div><div class="mt-4 border-t border-white/15 pt-4"><div class="flex justify-between text-lg font-black"><span>Total</span><span>{{ money(total) }}</span></div><button class="mt-4 w-full rounded-xl bg-chic-orange px-4 py-3 font-extrabold text-white transition hover:bg-chic-orange-dark disabled:cursor-not-allowed disabled:bg-stone-600" :disabled="disabled" @click="emit('checkout')">Lanjut pembayaran</button></div></aside>
+</template>
