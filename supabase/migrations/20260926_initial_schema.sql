@@ -139,7 +139,8 @@ begin
 end;
 $$;
 
-create or replace function public.get_financial_report(p_start_date date, p_end_date date)
+drop function if exists public.get_financial_report(date, date);
+create function public.get_financial_report(p_start_date date, p_end_date date)
 returns table (revenue numeric, transaction_count bigint, average_transaction numeric, cash_revenue numeric, qris_revenue numeric)
 language sql security definer set search_path = public as $$
   select coalesce(sum(total_revenue), 0), count(*), coalesce(avg(total_revenue), 0),
