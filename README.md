@@ -4,8 +4,8 @@ Prototype web self-service untuk pemesanan Chicken Steak Chic Kampus, dengan Kio
 
 ## Fitur
 
-- Kiosk tablet: pilih ukuran, saus, karbohidrat, pembayaran QRIS/tunai, nomor antrean, dan struk thermal browser.
-- Owner: login email/password, antrean realtime, konfirmasi tunai, pembatalan pesanan aktif, status pesanan, struk, stok bahan dan kemasan, ledger, serta laporan omzet.
+- Kiosk tablet: pilih ukuran, saus, karbohidrat, pembayaran QRIS/tunai, nomor antrean, dan struk thermal browser dengan halaman portrait yang menyesuaikan lebar/konten struk.
+- Owner: login email/password, antrean realtime, konfirmasi tunai, pembatalan pesanan tunai sebelum konfirmasi, status pesanan, struk, stok bahan dan kemasan, ledger, serta laporan omzet.
 - Supabase: PostgreSQL, Auth, RLS, RPC, dan Realtime.
 
 ## Menjalankan lokal
@@ -53,4 +53,4 @@ Jangan gunakan URL localhost atau `service_role` key di frontend. `vercel.json` 
 
 ## Catatan prototype
 
-QRIS dan cetak struk adalah simulasi browser. Pembatalan Owner memulihkan stok dan menandai pembayaran batal; bila uang tunai sudah diterima, pengembalian dilakukan manual. Laporan keuangan menampilkan omzet; laba/rugi belum tersedia karena HPP dan biaya operasional belum dicatat.
+QRIS dan cetak struk adalah simulasi browser. Owner hanya dapat membatalkan pesanan tunai yang belum dikonfirmasi; pembatalan memulihkan stok dan menandai pembayaran batal. Laporan keuangan menampilkan omzet; laba/rugi belum tersedia karena HPP dan biaya operasional belum dicatat.

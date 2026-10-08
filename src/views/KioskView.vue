@@ -11,6 +11,7 @@ import { useCart } from '../composables/useCart'
 import { useIdleTimer } from '../composables/useIdleTimer'
 import { useInventory } from '../composables/useInventory'
 import { useOrders } from '../composables/useOrders'
+import { printReceipt } from '../utils/printReceipt'
 
 const { cart, totalPrice, isEmpty, addItem, updateQuantity, removeItem, clearCart, toOrderItems } = useCart()
 const { ingredients, fetchIngredients, isItemAvailable, isCartAvailable } = useInventory()
@@ -59,7 +60,14 @@ async function submitOrder(method) {
     checkoutOpen.value = false
     clearCart()
     closeCustomization()
-    if (method === 'qris') { await nextTick(); window.print() }
+    if (method === 'qris') {
+      await nextTick()
+      try {
+        await printReceipt()
+      } catch (printError) {
+        notice.value = `Pesanan berhasil, tetapi struk gagal dicetak: ${printError.message || 'silakan cetak ulang.'}`
+      }
+    }
   } catch (error) { notice.value = error.message || 'Pesanan gagal dikirim. Silakan coba lagi.' }
 }
 function setOnlineStatus() { isOnline.value = navigator.onLine }

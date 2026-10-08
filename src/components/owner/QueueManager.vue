@@ -3,12 +3,15 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { getCarb, getSauce, getSize } from '../../constants/menu'
 import { useOrders } from '../../composables/useOrders'
 import { requireSupabase } from '../../supabase'
+import { printReceipt } from '../../utils/printReceipt'
 import ThermalReceipt from '../kiosk/ThermalReceipt.vue'
 
 const { orders, loading, error, fetchOrders, confirmCashPayment, updateOrderStatus, cancelOrder } = useOrders()
 const actionOrderId = ref(null)
 const actionError = ref('')
 const receiptOrder = ref(null)
+const cancelDialogOrder = ref(null)
+const cancellationNotice = ref('')
 let ordersChannel = null
 
 const activeOrders = computed(() => [...orders.value].sort((a, b) => a.queue_number - b.queue_number))
@@ -57,11 +60,16 @@ async function receiveCash(order) {
     receiptOrder.value = normalizeOrder({ ...order, ...updatedOrder, payment_status: 'paid', status: 'processing' })
     await refresh()
     await nextTick()
-    window.print()
   } catch (requestError) {
     actionError.value = requestError.message || 'Pembayaran tunai belum dapat dikonfirmasi.'
+    return
   } finally {
     actionOrderId.value = null
+  }
+  try {
+    await printReceipt()
+  } catch (printError) {
+    actionError.value = `Pembayaran sudah dikonfirmasi, tetapi struk gagal dicetak: ${printError.message || 'silakan cetak ulang.'}`
   }
 }
 
@@ -80,14 +88,20 @@ async function completeOrder(order) {
 }
 
 async function cancelActiveOrder(order) {
-  if (actionOrderId.value || order.status === 'completed' || order.status === 'cancelled') return
-  const message = `Batalkan pesanan #${order.queue_number}? Stok akan dipulihkan dan pembayaran ditandai batal. Jika uang tunai sudah diterima, pengembalian harus dilakukan secara manual.`
-  if (!window.confirm(message)) return
+  if (actionOrderId.value || order.payment_method !== 'cash' || order.payment_status !== 'waiting' || order.status !== 'waiting') return
+  cancelDialogOrder.value = order
+}
+
+async function confirmCancelOrder() {
+  const order = cancelDialogOrder.value
+  if (!order || actionOrderId.value) return
   actionOrderId.value = order.id
   actionError.value = ''
   try {
     await cancelOrder(order.id, `Dibatalkan Owner sebelum selesai (antrean #${order.queue_number}).`)
+    cancelDialogOrder.value = null
     await refresh()
+    cancellationNotice.value = `Pesanan #${order.queue_number} berhasil dibatalkan. Stok sudah dikembalikan.`
   } catch (requestError) {
     actionError.value = requestError.message || 'Pesanan belum dapat dibatalkan.'
   } finally {
@@ -171,7 +185,7 @@ onBeforeUnmount(() => {
             {{ actionOrderId === order.id ? 'Memproses…' : 'Tandai selesai' }}
           </button>
           <button
-            v-if="order.status !== 'completed' && order.status !== 'cancelled'"
+            v-if="order.payment_method === 'cash' && order.payment_status === 'waiting' && order.status === 'waiting'"
             class="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"
             :disabled="Boolean(actionOrderId)"
             type="button"
@@ -185,5 +199,23 @@ onBeforeUnmount(() => {
     </div>
 
     <ThermalReceipt v-if="receiptOrder" :order="receiptOrder" />
+    <div v-if="cancelDialogOrder" class="screen-only fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+      <section class="w-full max-w-md rounded-3xl bg-white p-7 text-center shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="cancel-order-title">
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-red-700">Konfirmasi pembatalan</p>
+        <h2 id="cancel-order-title" class="mt-2 text-xl font-black">Batalkan pesanan #{{ cancelDialogOrder.queue_number }}?</h2>
+        <p class="mt-3 text-sm text-stone-600">Pembatalan hanya dapat dilakukan sebelum tunai dikonfirmasi. Stok pesanan akan dikembalikan.</p>
+        <div class="mt-6 flex justify-center gap-3">
+          <button class="rounded-xl border border-stone-200 px-5 py-3 font-bold text-stone-700 disabled:opacity-60" :disabled="Boolean(actionOrderId)" type="button" @click="cancelDialogOrder = null">Kembali</button>
+          <button class="rounded-xl bg-red-700 px-5 py-3 font-bold text-white disabled:opacity-60" :disabled="Boolean(actionOrderId)" type="button" @click="confirmCancelOrder">{{ actionOrderId ? 'Memproses…' : 'Ya, batalkan' }}</button>
+        </div>
+      </section>
+    </div>
+    <div v-if="cancellationNotice" class="screen-only fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+      <section class="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="cancel-success-title">
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Pembatalan berhasil</p>
+        <h2 id="cancel-success-title" class="mt-2 text-xl font-black">{{ cancellationNotice }}</h2>
+        <button class="mt-6 rounded-xl bg-chic-orange px-5 py-3 font-bold text-white" type="button" @click="cancellationNotice = ''">Tutup</button>
+      </section>
+    </div>
   </section>
 </template>
