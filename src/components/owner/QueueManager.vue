@@ -5,7 +5,7 @@ import { useOrders } from '../../composables/useOrders'
 import { requireSupabase } from '../../supabase'
 import ThermalReceipt from '../kiosk/ThermalReceipt.vue'
 
-const { orders, loading, error, fetchOrders, confirmCashPayment, updateOrderStatus } = useOrders()
+const { orders, loading, error, fetchOrders, confirmCashPayment, updateOrderStatus, cancelOrder } = useOrders()
 const actionOrderId = ref(null)
 const actionError = ref('')
 const receiptOrder = ref(null)
@@ -74,6 +74,22 @@ async function completeOrder(order) {
     await refresh()
   } catch (requestError) {
     actionError.value = requestError.message || 'Status pesanan belum dapat diperbarui.'
+  } finally {
+    actionOrderId.value = null
+  }
+}
+
+async function cancelActiveOrder(order) {
+  if (actionOrderId.value || order.status === 'completed' || order.status === 'cancelled') return
+  const message = `Batalkan pesanan #${order.queue_number}? Stok akan dipulihkan dan pembayaran ditandai batal. Jika uang tunai sudah diterima, pengembalian harus dilakukan secara manual.`
+  if (!window.confirm(message)) return
+  actionOrderId.value = order.id
+  actionError.value = ''
+  try {
+    await cancelOrder(order.id, `Dibatalkan Owner sebelum selesai (antrean #${order.queue_number}).`)
+    await refresh()
+  } catch (requestError) {
+    actionError.value = requestError.message || 'Pesanan belum dapat dibatalkan.'
   } finally {
     actionOrderId.value = null
   }
@@ -153,6 +169,15 @@ onBeforeUnmount(() => {
             @click="completeOrder(order)"
           >
             {{ actionOrderId === order.id ? 'Memproses…' : 'Tandai selesai' }}
+          </button>
+          <button
+            v-if="order.status !== 'completed' && order.status !== 'cancelled'"
+            class="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"
+            :disabled="Boolean(actionOrderId)"
+            type="button"
+            @click="cancelActiveOrder(order)"
+          >
+            {{ actionOrderId === order.id ? 'Memproses…' : 'Batalkan pesanan' }}
           </button>
           <span v-if="order.payment_method === 'qris' && order.status === 'processing'" class="self-center text-xs font-medium text-stone-500">QRIS telah lunas · struk sudah dicetak di Kiosk</span>
         </div>

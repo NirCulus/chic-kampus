@@ -22,10 +22,16 @@
 
 @media print {
   @page { size: 58mm auto; margin: 0; }
-  body * { visibility: hidden; }
-  #thermal-receipt, #thermal-receipt * { visibility: visible; }
-  #thermal-receipt { position: fixed; inset: 0 auto auto 0; width: 58mm; padding: 4mm; color: #000; background: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
-  .screen-only { display: none !important; }
+  html, body { width: 58mm; min-width: 0; min-height: 0; margin: 0; padding: 0; background: #fff; }
+  #app { display: none !important; }
+  body > #thermal-receipt { display: block !important; width: 58mm; margin: 0; padding: 4mm; color: #000; background: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; line-height: 1.35; }
+  #thermal-receipt p { margin: 2mm 0; }
+  #thermal-receipt hr { border: 0; border-top: 1px dashed #000; margin: 2mm 0; }
+  .receipt-header, .receipt-footer { text-align: center; }
+  .receipt-header { display: flex; flex-direction: column; }
+  .receipt-item, .receipt-total { display: flex; justify-content: space-between; gap: 2mm; break-inside: avoid; }
+  .receipt-item > span { min-width: 0; overflow-wrap: anywhere; }
+  .receipt-item > b, .receipt-total > b:last-child { white-space: nowrap; }
   .receipt-hidden { display: block !important; }
 }
 
