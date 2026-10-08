@@ -4,7 +4,7 @@ Prototype web self-service untuk pemesanan Chicken Steak Chic Kampus, dengan Kio
 
 ## Fitur
 
-- Kiosk tablet: pilih ukuran, saus, karbohidrat, pembayaran QRIS/tunai, nomor antrean, dan struk thermal browser dengan halaman portrait yang menyesuaikan lebar/konten struk.
+- Kiosk tablet: pilih ukuran, saus, karbohidrat, pembayaran QRIS/tunai, nomor antrean, dan struk thermal browser dengan halaman portrait yang mengikuti konten (maks. 50 mm) dan tinggi struk.
 - Owner: login email/password, antrean realtime, konfirmasi tunai, pembatalan pesanan tunai sebelum konfirmasi, status pesanan, struk, stok bahan dan kemasan, ledger, serta laporan omzet.
 - Supabase: PostgreSQL, Auth, RLS, RPC, dan Realtime.
 
