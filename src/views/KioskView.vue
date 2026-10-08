@@ -4,14 +4,13 @@ import CartSidebar from '../components/kiosk/CartSidebar.vue'
 import CheckoutModal from '../components/kiosk/CheckoutModal.vue'
 import MenuGrid from '../components/kiosk/MenuGrid.vue'
 import OfflineIndicator from '../components/kiosk/OfflineIndicator.vue'
-import ThermalReceipt from '../components/kiosk/ThermalReceipt.vue'
 import logo from '../assets/logo-chic-kampus.jpg'
 import { CARBS, getSize, SAUCES } from '../constants/menu'
 import { useCart } from '../composables/useCart'
 import { useIdleTimer } from '../composables/useIdleTimer'
 import { useInventory } from '../composables/useInventory'
 import { useOrders } from '../composables/useOrders'
-import { printReceipt } from '../utils/printReceipt'
+import { downloadReceiptPdf } from '../utils/printReceipt'
 
 const { cart, totalPrice, isEmpty, addItem, updateQuantity, removeItem, clearCart, toOrderItems } = useCart()
 const { ingredients, fetchIngredients, isItemAvailable, isCartAvailable } = useInventory()
@@ -21,6 +20,7 @@ const selectedSauce = ref(null)
 const selectedCarb = ref(null)
 const checkoutOpen = ref(false)
 const receiptOrder = ref(null)
+const receiptError = ref('')
 const isOnline = ref(navigator.onLine)
 const notice = ref('')
 const money = (value) => `Rp${value.toLocaleString('id-ID')}`
@@ -48,7 +48,7 @@ function addSelectedItem() {
   addItem(selectedConfiguration.value)
   closeCustomization()
 }
-function closeEverything() { clearCart(); closeCustomization(); checkoutOpen.value = false; receiptOrder.value = null; notice.value = '' }
+function closeEverything() { clearCart(); closeCustomization(); checkoutOpen.value = false; receiptOrder.value = null; receiptError.value = ''; notice.value = '' }
 const idleTimer = useIdleTimer(closeEverything, 120_000)
 
 async function submitOrder(method) {
@@ -57,18 +57,23 @@ async function submitOrder(method) {
   try {
     const result = await createOrder(method, toOrderItems())
     receiptOrder.value = { ...result, items: receiptItems, created_at: new Date().toISOString(), payment_method: method }
+    receiptError.value = ''
     checkoutOpen.value = false
     clearCart()
     closeCustomization()
     if (method === 'qris') {
       await nextTick()
-      try {
-        await printReceipt()
-      } catch (printError) {
-        notice.value = `Pesanan berhasil, tetapi struk gagal dicetak: ${printError.message || 'silakan cetak ulang.'}`
-      }
+      await retryReceiptDownload()
     }
   } catch (error) { notice.value = error.message || 'Pesanan gagal dikirim. Silakan coba lagi.' }
+}
+async function retryReceiptDownload() {
+  try {
+    await downloadReceiptPdf(receiptOrder.value)
+    receiptError.value = ''
+  } catch (downloadError) {
+    receiptError.value = downloadError.message || 'Silakan coba unduh ulang struk.'
+  }
 }
 function setOnlineStatus() { isOnline.value = navigator.onLine }
 onMounted(async () => {
@@ -98,7 +103,6 @@ onUnmounted(() => { window.removeEventListener('online', setOnlineStatus); windo
       </section>
     </div>
     <CheckoutModal v-if="checkoutOpen" :total="totalPrice" :submitting="orderLoading" @close="checkoutOpen = false" @confirm="submitOrder" />
-    <div v-if="receiptOrder" class="screen-only fixed inset-0 z-40 grid place-items-center bg-black/50 p-4"><section class="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-2xl"><p class="text-xs font-bold uppercase tracking-[0.16em] text-chic-orange">Pesanan berhasil</p><p class="mt-3 text-5xl font-black">#{{ receiptOrder.queue_number }}</p><h2 class="mt-3 text-xl font-black">{{ receiptOrder.payment_method === 'qris' ? 'Pembayaran QRIS berhasil' : 'Silakan bayar ke owner' }}</h2><p class="mt-2 text-sm text-stone-500">{{ receiptOrder.payment_method === 'qris' ? 'Struk sedang dicetak. Tunjukkan nomor antrean saat mengambil pesanan.' : 'Pesanan diproses setelah pembayaran tunai diterima.' }}</p><button class="mt-6 rounded-xl bg-chic-orange px-5 py-3 font-bold text-white" @click="receiptOrder = null">Selesai</button></section></div>
-    <ThermalReceipt v-if="receiptOrder" :order="receiptOrder" />
+    <div v-if="receiptOrder" class="screen-only fixed inset-0 z-40 grid place-items-center bg-black/50 p-4"><section class="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-2xl"><p class="text-xs font-bold uppercase tracking-[0.16em] text-chic-orange">Pesanan berhasil</p><p class="mt-3 text-5xl font-black">#{{ receiptOrder.queue_number }}</p><h2 class="mt-3 text-xl font-black">{{ receiptOrder.payment_method === 'qris' ? 'Pembayaran QRIS berhasil' : 'Silakan bayar ke owner' }}</h2><p class="mt-2 text-sm text-stone-500">{{ receiptOrder.payment_method === 'qris' ? 'File struk PDF sudah diunduh. Tunjukkan nomor antrean saat mengambil pesanan.' : 'Pesanan diproses setelah pembayaran tunai diterima.' }}</p><p v-if="receiptError" class="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ receiptError }}</p><button v-if="receiptOrder.payment_method === 'qris' && receiptError" class="mt-4 rounded-xl border border-orange-200 px-5 py-3 font-bold text-chic-orange" type="button" @click="retryReceiptDownload">Unduh struk PDF lagi</button><button class="mt-6 rounded-xl bg-chic-orange px-5 py-3 font-bold text-white" @click="receiptOrder = null">Selesai</button></section></div>
   </main>
 </template>

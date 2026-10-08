@@ -3,8 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { getCarb, getSauce, getSize } from '../../constants/menu'
 import { useOrders } from '../../composables/useOrders'
 import { requireSupabase } from '../../supabase'
-import { printReceipt } from '../../utils/printReceipt'
-import ThermalReceipt from '../kiosk/ThermalReceipt.vue'
+import { downloadReceiptPdf } from '../../utils/printReceipt'
 
 const { orders, loading, error, fetchOrders, confirmCashPayment, updateOrderStatus, cancelOrder } = useOrders()
 const actionOrderId = ref(null)
@@ -67,9 +66,9 @@ async function receiveCash(order) {
     actionOrderId.value = null
   }
   try {
-    await printReceipt()
+    await downloadReceiptPdf(receiptOrder.value)
   } catch (printError) {
-    actionError.value = `Pembayaran sudah dikonfirmasi, tetapi struk gagal dicetak: ${printError.message || 'silakan cetak ulang.'}`
+    actionError.value = `Pembayaran sudah dikonfirmasi, tetapi PDF struk gagal diunduh: ${printError.message || 'silakan ulangi.'}`
   }
 }
 
@@ -173,7 +172,7 @@ onBeforeUnmount(() => {
             type="button"
             @click="receiveCash(order)"
           >
-            {{ actionOrderId === order.id ? 'Memproses…' : 'Tunai diterima & cetak struk' }}
+            {{ actionOrderId === order.id ? 'Memproses…' : 'Tunai diterima & unduh PDF' }}
           </button>
           <button
             v-if="order.status === 'processing'"
@@ -198,7 +197,6 @@ onBeforeUnmount(() => {
       </article>
     </div>
 
-    <ThermalReceipt v-if="receiptOrder" :order="receiptOrder" />
     <div v-if="cancelDialogOrder" class="screen-only fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
       <section class="w-full max-w-md rounded-3xl bg-white p-7 text-center shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="cancel-order-title">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-red-700">Konfirmasi pembatalan</p>

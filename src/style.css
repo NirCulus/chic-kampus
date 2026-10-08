@@ -19,27 +19,3 @@
 
   button { cursor: pointer; }
 }
-
-@media print {
-  @page { size: auto; margin: 0; }
-  html, body { width: auto; min-width: 0; min-height: 0; margin: 0; padding: 0; background: #fff; }
-  #app { display: none !important; }
-  body > #thermal-receipt { display: block !important; position: static; left: auto; top: auto; width: max-content; max-width: 50mm; margin: 0; padding: 2.5mm; color: #000; background: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; line-height: 1.35; }
-  #thermal-receipt p { margin: 2mm 0; }
-  #thermal-receipt hr { border: 0; border-top: 1px dashed #000; margin: 2mm 0; }
-  .receipt-header, .receipt-footer { text-align: center; }
-  .receipt-header { display: flex; flex-direction: column; }
-  .receipt-item, .receipt-total { display: flex; justify-content: space-between; gap: 2mm; break-inside: avoid; }
-  .receipt-item > span { min-width: 0; overflow-wrap: anywhere; }
-  .receipt-item > b, .receipt-total > b:last-child { white-space: nowrap; }
-}
-
-.receipt-hidden { display: none; }
-.receipt-printing { display: block; position: fixed; left: -10000px; top: 0; width: max-content; max-width: 50mm; margin: 0; padding: 2.5mm; color: #000; background: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; line-height: 1.35; }
-.receipt-printing p { margin: 2mm 0; }
-.receipt-printing hr { border: 0; border-top: 1px dashed #000; margin: 2mm 0; }
-.receipt-printing .receipt-header, .receipt-printing .receipt-footer { text-align: center; }
-.receipt-printing .receipt-header { display: flex; flex-direction: column; }
-.receipt-printing .receipt-item, .receipt-printing .receipt-total { display: flex; justify-content: space-between; gap: 2mm; break-inside: avoid; }
-.receipt-printing .receipt-item > span { min-width: 0; overflow-wrap: anywhere; }
-.receipt-printing .receipt-item > b, .receipt-printing .receipt-total > b:last-child { white-space: nowrap; }
