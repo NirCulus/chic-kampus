@@ -52,7 +52,7 @@ const idleTimer = useIdleTimer(closeEverything, 120_000)
 
 async function submitOrder(method) {
   if (checkoutDisabled.value) return
-  const receiptItems = structuredClone(cart.value)
+  const receiptItems = cart.value.map((item) => ({ ...item }))
   try {
     const result = await createOrder(method, toOrderItems())
     receiptOrder.value = { ...result, items: receiptItems, created_at: new Date().toISOString(), payment_method: method }
