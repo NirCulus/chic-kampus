@@ -1,7 +1,7 @@
 export const MENU_SIZES = [
-  { id: 'small', label: 'CK Steak Small', price: 15000, chickenIngredientId: 'chicken_sm' },
-  { id: 'medium', label: 'CK Steak Medium', price: 17000, chickenIngredientId: 'chicken_md' },
-  { id: 'large', label: 'CK Steak Large', price: 22000, chickenIngredientId: 'chicken_lg' },
+  { id: 'small', label: 'CK Steak Small', shortLabel: 'S', price: 15000, chickenIngredientId: 'chicken_sm' },
+  { id: 'medium', label: 'CK Steak Medium', shortLabel: 'M', price: 17000, chickenIngredientId: 'chicken_md' },
+  { id: 'large', label: 'CK Steak Large', shortLabel: 'L', price: 22000, chickenIngredientId: 'chicken_lg' },
 ]
 
 export const SAUCES = [
