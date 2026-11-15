@@ -59,6 +59,13 @@ function chartPoints(rows, groupBy) {
   return points
 }
 
+function chartTime(value) {
+  return new Intl.DateTimeFormat('id-ID', {
+    hour: '2-digit',
+    timeZone: 'Asia/Jakarta',
+  }).format(new Date(value))
+}
+
 export function createFinancialReportPdf(report) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -141,12 +148,17 @@ export function createFinancialReportPdf(report) {
   }
 
   function drawTrendChart(x, top, width, height, groupBy) {
-    const rows = [...report.trend].reverse()
-    const points = chartPoints(rows, groupBy)
+    const rows = report.isSingleDay ? report.hourlyTrend : [...report.trend].reverse()
+    const points = report.isSingleDay
+      ? rows.map((row) => ({
+        label: row.period_start.slice(11, 13),
+        value: report.chartMetric === 'transactions' ? Number(row.transaction_count) : Number(row.revenue),
+      }))
+      : chartPoints(rows, groupBy)
     doc.setTextColor(...INK)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
-    doc.text('Tren omzet', x, top)
+    doc.text(report.isSingleDay ? 'Tren per jam' : 'Tren penjualan', x, top)
     const chartTop = top + 8
     const chartBottom = chartTop + height - 19
     const chartHeight = chartBottom - chartTop
@@ -250,8 +262,9 @@ export function createFinancialReportPdf(report) {
 
   function drawDetailTable() {
     addPage()
-    sectionTitle('Rekap per periode')
-    const columns = [
+    const transactionDetail = report.isSingleDay && report.detailMode === 'transaction'
+    sectionTitle(transactionDetail ? 'Rekap per transaksi' : report.isSingleDay ? 'Rekap per jam' : 'Rekap per periode')
+    const periodColumns = [
       { title: 'Periode', width: 49, align: 'left' },
       { title: 'Transaksi', width: 18, align: 'right' },
       { title: 'Porsi', width: 15, align: 'right' },
@@ -263,8 +276,24 @@ export function createFinancialReportPdf(report) {
       { title: 'Ulasan', width: 16, align: 'right' },
       { title: 'Rating', width: 18, align: 'right' },
     ]
+    const transactionColumns = [
+      { title: 'Waktu', width: 23, align: 'left' },
+      { title: 'Antrean', width: 22, align: 'right' },
+      { title: 'Metode', width: 25, align: 'left' },
+      { title: 'Porsi', width: 16, align: 'right' },
+      { title: 'Omzet', width: 34, align: 'right' },
+      { title: 'HPP', width: 31, align: 'right' },
+      { title: 'Laba kotor', width: 36, align: 'right' },
+      { title: 'Rating', width: 17, align: 'right' },
+    ]
+    const columns = transactionDetail ? transactionColumns : periodColumns
     const tableWidth = columns.reduce((sum, column) => sum + column.width, 0)
     const tableX = PAGE_MARGIN + (contentWidth - tableWidth) / 2
+    const detailRows = transactionDetail
+      ? report.transactions
+      : report.isSingleDay
+        ? report.hourlyTrend
+        : report.trend
 
     function drawTableHeader() {
       const height = 8
@@ -289,7 +318,7 @@ export function createFinancialReportPdf(report) {
     doc.text('Hanya transaksi lunas. Laba kotor = omzet - HPP estimasi; belum dikurangi biaya operasional.', tableX, y + 1)
     y += 7
 
-    if (!report.trend.length) {
+    if (!detailRows.length) {
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(8)
       doc.setTextColor(...MUTED)
@@ -297,25 +326,38 @@ export function createFinancialReportPdf(report) {
       return
     }
 
-    report.trend.forEach((row, index) => {
-      const values = [
-        periodLabel(row.period_start, report.groupBy),
-        number(row.transaction_count),
-        number(row.portion_count),
-        currency(row.revenue),
-        currency(row.estimated_cogs),
-        currency(Number(row.revenue) - Number(row.estimated_cogs)),
-        currency(row.qris_revenue),
-        currency(row.cash_revenue),
-        number(row.review_count),
-        Number(row.review_count)
-          ? Number(row.average_rating).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-          : '-',
-      ]
+    detailRows.forEach((row, index) => {
+      const values = transactionDetail
+        ? [
+          chartTime(row.created_at),
+          `#${number(row.queue_number)}`,
+          row.payment_method === 'qris' ? 'QRIS' : 'Tunai',
+          number(row.portion_count),
+          currency(row.revenue),
+          currency(row.estimated_cogs),
+          currency(Number(row.revenue) - Number(row.estimated_cogs)),
+          String(row.review_rating ?? '-'),
+        ]
+        : [
+          report.isSingleDay
+            ? `${row.period_start.slice(11, 13)}.00-${String(Number(row.period_start.slice(11, 13)) + 1).padStart(2, '0')}.00`
+            : periodLabel(row.period_start, report.groupBy),
+          number(row.transaction_count),
+          number(row.portion_count),
+          currency(row.revenue),
+          currency(row.estimated_cogs),
+          currency(Number(row.revenue) - Number(row.estimated_cogs)),
+          currency(row.qris_revenue),
+          currency(row.cash_revenue),
+          number(row.review_count),
+          Number(row.review_count)
+            ? Number(row.average_rating).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+            : '-',
+        ]
       const rowHeight = 7
       if (y + rowHeight > pageHeight - 14) {
         addPage()
-        sectionTitle('Rekap per periode - lanjutan')
+        sectionTitle(transactionDetail ? 'Rekap per transaksi - lanjutan' : report.isSingleDay ? 'Rekap per jam - lanjutan' : 'Rekap per periode - lanjutan')
         drawTableHeader()
       }
       if (index % 2 === 0) {

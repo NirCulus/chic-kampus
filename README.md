@@ -7,7 +7,7 @@ Prototype web self-service untuk pemesanan Chicken Steak Chic Kampus, dengan Kio
 - Kiosk tablet: pilih ukuran, saus, karbohidrat, pembayaran QRIS/tunai, nomor antrean, dan unduhan PDF struk portrait berukuran khusus yang mengikuti teks dan isi pesanan.
 - Owner: login email/password, antrean realtime, konfirmasi tunai, pembatalan pesanan tunai sebelum konfirmasi, status pesanan, stok bahan dan kemasan, HPP estimasi, ulasan, serta satu halaman keuangan dan penjualan.
 - Ulasan pelanggan: formulir rating setelah pemesanan, halaman ulasan publik, ringkasan Owner, filter berdasarkan rating, dan daftar ulasan terbaru.
-- Keuangan & penjualan: filter rentang tanggal, grafik tren yang dapat diarahkan/dipilih untuk melihat rincian periode, menu terlaris, metode pembayaran, rekap harian/mingguan/bulanan, dan ekspor PDF laporan multi-halaman.
+- Keuangan & penjualan: filter rentang tanggal, perbandingan KPI dengan periode sebelumnya, grafik harian yang dapat ditelusuri hingga per jam, rekap per jam/per transaksi, metode pembayaran dalam grafik batang atau donat, dan ekspor CSV/PDF multi-halaman.
 - Supabase: PostgreSQL, Auth, RLS, RPC, dan Realtime.
 
 ## Menjalankan lokal
@@ -56,8 +56,11 @@ Jangan gunakan URL localhost atau `service_role` key di frontend. `vercel.json` 
 ## HPP dan laporan
 
 Migrasi `20261014_reviews_and_financial_reporting.sql` menambahkan biaya satuan bahan, snapshot HPP pada setiap item pesanan, tabel ulasan, dan RPC rekap. Jalankan migrasi sebelum memakai fitur keuangan/ulasan baru (`npx supabase db reset` untuk database lokal).
+Migrasi `20261116_hourly_and_transaction_sales_recap.sql` menambahkan RPC khusus Owner untuk rincian penjualan per jam dan per transaksi.
 
 Harga bahan awal adalah estimasi; owner dapat mengubah HPP satuan pada tab **Stok & HPP**. Tab **Keuangan & penjualan** menyatukan ringkasan, grafik, dan rekap dengan filter periode yang sama. Ekspor PDF disusun sebagai dokumen laporan berhalaman (teks, tabel, dan grafik), bukan tangkapan layar. Laporan memakai biaya bahan yang tersimpan saat pesanan dibuat agar perubahan biaya tidak mengubah riwayat. Laba yang ditampilkan adalah laba kotor estimasi (omzet dikurangi HPP bahan), belum dikurangi biaya operasional.
+
+Saat satu tanggal dipilih, grafik menampilkan transaksi per jam; rekap dapat dialihkan antara ringkasan per jam dan per transaksi. Kartu KPI membandingkan rentang aktif dengan jumlah hari yang sama sebelumnya (rating dibandingkan dalam poin, bukan persen). Untuk memperbarui data demo cloud, `supabase/snippets/replace_cloud_demo_sales.sql` hanya mengganti baris dengan ID demo seed yang dikenal, mempertahankan data lain, dan membatalkan proses bila menemukan mutasi stok terkait.
 
 ## Catatan prototype
 
