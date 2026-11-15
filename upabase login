@@ -1,0 +1,13 @@
+ README.md                                          |  12 [32m+[m[31m-[m
+ src/components/owner/CustomerReviews.vue           | 124 [32m++++++[m
+ src/components/owner/FinanceDashboard.vue          |  61 [31m---[m
+ src/components/owner/FinancialReports.vue          | 472 [32m+++++++++++++++++++++[m
+ src/components/owner/InventoryControl.vue          |  32 [32m+[m[31m-[m
+ src/router/index.js                                |   6 [32m+[m
+ src/utils/financialReportPdf.js                    | 366 [32m++++++++++++++++[m
+ src/views/KioskView.vue                            |  35 [32m+[m[31m-[m
+ src/views/OwnerView.vue                            |  12 [32m+[m[31m-[m
+ src/views/ReviewsView.vue                          |  65 [32m+++[m
+ .../20261014_reviews_and_financial_reporting.sql   | 342 [32m+++++++++++++++[m
+ .../snippets/replace_local_sales_with_demo.sql     | 166 [32m++++++++[m
+ 12 files changed, 1623 insertions(+), 70 deletions(-)
