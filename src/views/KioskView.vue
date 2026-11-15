@@ -10,6 +10,7 @@ import { useCart } from '../composables/useCart'
 import { useIdleTimer } from '../composables/useIdleTimer'
 import { useInventory } from '../composables/useInventory'
 import { useOrders } from '../composables/useOrders'
+import { requireSupabase } from '../supabase'
 import { downloadReceiptPdf } from '../utils/printReceipt'
 
 const { cart, totalPrice, isEmpty, addItem, updateQuantity, removeItem, clearCart, toOrderItems } = useCart()
@@ -21,6 +22,12 @@ const selectedCarb = ref(null)
 const checkoutOpen = ref(false)
 const receiptOrder = ref(null)
 const receiptError = ref('')
+const reviewRating = ref(0)
+const reviewName = ref('')
+const reviewComment = ref('')
+const reviewSubmitting = ref(false)
+const reviewError = ref('')
+const reviewSubmitted = ref(false)
 const isOnline = ref(navigator.onLine)
 const notice = ref('')
 const money = (value) => `Rp${value.toLocaleString('id-ID')}`
@@ -58,6 +65,11 @@ async function submitOrder(method) {
     const result = await createOrder(method, toOrderItems())
     receiptOrder.value = { ...result, items: receiptItems, created_at: new Date().toISOString(), payment_method: method }
     receiptError.value = ''
+    reviewRating.value = 0
+    reviewName.value = ''
+    reviewComment.value = ''
+    reviewError.value = ''
+    reviewSubmitted.value = false
     checkoutOpen.value = false
     clearCart()
     closeCustomization()
@@ -66,6 +78,25 @@ async function submitOrder(method) {
       await retryReceiptDownload()
     }
   } catch (error) { notice.value = error.message || 'Pesanan gagal dikirim. Silakan coba lagi.' }
+}
+async function submitReview() {
+  if (!receiptOrder.value?.order_id || !reviewRating.value || reviewSubmitting.value || reviewSubmitted.value) return
+  reviewSubmitting.value = true
+  reviewError.value = ''
+  try {
+    const { error } = await requireSupabase().rpc('submit_review', {
+      p_order_id: receiptOrder.value.order_id,
+      p_customer_name: reviewName.value,
+      p_rating: reviewRating.value,
+      p_comment: reviewComment.value,
+    })
+    if (error) throw error
+    reviewSubmitted.value = true
+  } catch (error) {
+    reviewError.value = error.message || 'Ulasan belum dapat dikirim.'
+  } finally {
+    reviewSubmitting.value = false
+  }
 }
 async function retryReceiptDownload() {
   try {
@@ -88,7 +119,7 @@ onUnmounted(() => { window.removeEventListener('online', setOnlineStatus); windo
 <template>
   <main class="min-h-screen bg-chic-cream text-chic-ink">
     <OfflineIndicator v-if="!isOnline" />
-    <header class="border-b border-orange-100 bg-white"><div class="mx-auto flex max-w-7xl items-center gap-3 px-5 py-4"><img :src="logo" alt="Logo Chic Kampus" class="h-11 w-11 rounded-full object-cover"><div><p class="font-black tracking-tight">CHIC KAMPUS</p><p class="text-xs text-stone-500">Self-service ordering</p></div><span class="ml-auto rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-chic-orange">Kiosk</span></div></header>
+    <header class="border-b border-orange-100 bg-white"><div class="mx-auto flex max-w-7xl items-center gap-3 px-5 py-4"><img :src="logo" alt="Logo Chic Kampus" class="h-11 w-11 rounded-full object-cover"><div><p class="font-black tracking-tight">CHIC KAMPUS</p><p class="text-xs text-stone-500">Self-service ordering</p></div><RouterLink class="ml-auto rounded-full bg-orange-50 px-3 py-2 text-xs font-bold text-chic-orange" to="/reviews">★ Ulasan pelanggan</RouterLink></div></header>
     <div class="mx-auto grid max-w-7xl gap-6 px-5 py-7 lg:grid-cols-[1fr_360px]">
       <div><MenuGrid :ingredients="ingredients" @select="chooseSize" /><p v-if="notice && !customizationOpen" class="mt-5 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">{{ notice }}</p></div>
       <CartSidebar :items="cart" :total="totalPrice" :disabled="checkoutDisabled" @change-quantity="updateQuantity" @remove="removeItem" @checkout="checkoutOpen = true" />
@@ -103,6 +134,6 @@ onUnmounted(() => { window.removeEventListener('online', setOnlineStatus); windo
       </section>
     </div>
     <CheckoutModal v-if="checkoutOpen" :total="totalPrice" :submitting="orderLoading" @close="checkoutOpen = false" @confirm="submitOrder" />
-    <div v-if="receiptOrder" class="screen-only fixed inset-0 z-40 grid place-items-center bg-black/50 p-4"><section class="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-2xl"><p class="text-xs font-bold uppercase tracking-[0.16em] text-chic-orange">Pesanan berhasil</p><p class="mt-3 text-5xl font-black">#{{ receiptOrder.queue_number }}</p><h2 class="mt-3 text-xl font-black">{{ receiptOrder.payment_method === 'qris' ? 'Pembayaran QRIS berhasil' : 'Silakan bayar ke owner' }}</h2><p class="mt-2 text-sm text-stone-500">{{ receiptOrder.payment_method === 'qris' ? 'File struk PDF sudah diunduh. Tunjukkan nomor antrean saat mengambil pesanan.' : 'Pesanan diproses setelah pembayaran tunai diterima.' }}</p><p v-if="receiptError" class="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ receiptError }}</p><button v-if="receiptOrder.payment_method === 'qris' && receiptError" class="mt-4 rounded-xl border border-orange-200 px-5 py-3 font-bold text-chic-orange" type="button" @click="retryReceiptDownload">Unduh struk PDF lagi</button><button class="mt-6 rounded-xl bg-chic-orange px-5 py-3 font-bold text-white" @click="receiptOrder = null">Selesai</button></section></div>
+    <div v-if="receiptOrder" class="screen-only fixed inset-0 z-40 grid place-items-center overflow-y-auto bg-black/50 p-4"><section class="my-auto w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-7" role="dialog" aria-modal="true" aria-labelledby="order-success-title"><div class="text-center"><p class="text-xs font-bold uppercase tracking-[0.16em] text-chic-orange">Pesanan berhasil</p><p class="mt-2 text-5xl font-black">#{{ receiptOrder.queue_number }}</p><h2 id="order-success-title" class="mt-2 text-xl font-black">{{ receiptOrder.payment_method === 'qris' ? 'Pembayaran QRIS berhasil' : 'Silakan bayar ke owner' }}</h2><p class="mt-2 text-sm text-stone-500">{{ receiptOrder.payment_method === 'qris' ? 'File struk PDF sudah diunduh. Tunjukkan nomor antrean saat mengambil pesanan.' : 'Pesanan diproses setelah pembayaran tunai diterima.' }}</p><p v-if="receiptError" class="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ receiptError }}</p><button v-if="receiptOrder.payment_method === 'qris' && receiptError" class="mt-4 rounded-xl border border-orange-200 px-5 py-3 font-bold text-chic-orange" type="button" @click="retryReceiptDownload">Unduh struk PDF lagi</button></div><form v-if="!reviewSubmitted" class="mt-6 border-t border-orange-100 pt-5" @submit.prevent="submitReview"><p class="text-center text-xs font-bold uppercase tracking-[0.14em] text-chic-orange">Bantu kami jadi lebih baik</p><h3 class="mt-1 text-center text-lg font-black">Bagaimana pesananmu?</h3><div class="mt-3 flex justify-center gap-1" role="radiogroup" aria-label="Pilih rating"><button v-for="rating in 5" :key="rating" class="px-1 text-3xl" :class="rating <= reviewRating ? 'text-amber-500' : 'text-stone-300'" type="button" role="radio" :aria-checked="reviewRating === rating" :aria-label="`${rating} bintang`" @click="reviewRating = rating">★</button></div><label class="mt-3 block text-sm font-bold">Nama <span class="font-normal text-stone-400">(opsional)</span><input v-model="reviewName" class="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2.5 font-normal" maxlength="30" placeholder="Nama Anda"></label><label class="mt-3 block text-sm font-bold">Komentar <span class="font-normal text-stone-400">(opsional)</span><textarea v-model="reviewComment" class="mt-1 w-full resize-none rounded-xl border border-stone-200 px-3 py-2.5 font-normal" rows="2" maxlength="240" placeholder="Ceritakan pengalaman Anda"></textarea></label><p v-if="reviewError" class="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ reviewError }}</p><button class="mt-4 w-full rounded-xl bg-chic-orange px-4 py-3 font-bold text-white disabled:bg-stone-300" type="submit" :disabled="!reviewRating || reviewSubmitting">{{ reviewSubmitting ? 'Mengirim ulasan…' : 'Kirim ulasan' }}</button></form><div v-else class="mt-6 rounded-2xl bg-emerald-50 p-4 text-center text-sm font-bold text-emerald-800">Terima kasih, ulasan Anda sudah terkirim.</div><div class="mt-4 flex justify-center"><button class="rounded-xl border border-stone-200 px-5 py-2.5 text-sm font-bold text-stone-600" type="button" @click="receiptOrder = null">{{ reviewSubmitted ? 'Selesai' : 'Lewati ulasan' }}</button></div></section></div>
   </main>
 </template>

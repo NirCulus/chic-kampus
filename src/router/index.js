@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import KioskView from '../views/KioskView.vue'
 import OwnerView from '../views/OwnerView.vue'
+import ReviewsView from '../views/ReviewsView.vue'
 import PinLogin from '../components/owner/PinLogin.vue'
 import { getOwnerSession } from '../composables/useAuth'
 
@@ -21,6 +22,11 @@ const routes = [
     path: '/kiosk',
     name: 'Kiosk',
     component: KioskView,
+  },
+  {
+    path: '/reviews',
+    name: 'Reviews',
+    component: ReviewsView,
   },
   {
     path: '/owner',
